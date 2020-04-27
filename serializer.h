@@ -11,6 +11,10 @@ extern "C" {
 
 std::string brainfuckTranslator(const char *s);
 
+struct jumpInfo {
+	int from;
+	int to;
+};
 
 // uh credits to jayden for these structs
 // if u want this to actually work figure out the luau structs urself lol
