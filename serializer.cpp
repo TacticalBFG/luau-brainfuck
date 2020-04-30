@@ -34,8 +34,10 @@ std::string brainfuckTranslator(const char *s) {
 
 	char *cells = new char[255];
 	char ptr = 0;
-	for (int c = 0; c < 255; c++)
+	for (int c = 0; c < 255; c++) {
 		cells[c] = 0;
+		//code.push_back(generateABx(0x8C, c, 1));
+	}
 
 	int nOpenedBrackets = 0;
 	int nLoop = 0;
@@ -44,31 +46,49 @@ std::string brainfuckTranslator(const char *s) {
 	std::vector<jumpInfo*> jumps;
 	std::string outputShit = "";
 
-	code.push_back(generateABC(0xa3, 0,0, 0));
+	code.push_back(generateABC(0xa3, 0, 0, 0));
 
-	for (int i = 0; i < strlen(s); i++) {
+	for (int i = 0; i  < strlen(s); i++) {
 		char token = s[i];
 
 		switch (token) {
 		case '+':
-			cells[ptr]++;
+			if (cells[reg] == 0)
+				code.push_back(generateABx(0x8C, reg, 0));
+			code.push_back(generateABx(0x8C, 255, 1));
+			code.push_back(generateABC(0x43, reg, reg, 255));
+			cells[reg]++;
 			break;
 		case '-':
-			cells[ptr]--;
+			if (cells[reg] == 0)
+				code.push_back(generateABx(0x8C, reg, 0));
+			code.push_back(generateABx(0x8C, 255, 1));
+			code.push_back(generateABC(0x26, reg, reg, 255));
+			cells[reg]--;
 			break;
 		case '>':
-			ptr++;
+			reg++;
 			break;
 		case '<':
-			ptr--;
+			reg--;
 			break;
 		case '.': {
-			std::string cellVal(1, cells[ptr]);
-			outputShit.append(cellVal);
+			constants.push_back("print");
+			code.push_back(generateABx(0x35, reg + 1, 0));
+			code.push_back(constants.size() - 1);
+			constants.push_back("string");
+			constants.push_back("char");
+			code.push_back(generateABx(0x35, reg + 2, 0));
+			code.push_back(constants.size() - 2);
+			code.push_back(generateABC(0x4D, reg + 2, reg + 2, 0));
+			code.push_back(constants.size() - 1);
+			code.push_back(generateABC(0x52, reg + 3, reg, 0));
+			code.push_back(generateABC(0x9F, reg + 2, 2, 0));
+			code.push_back(generateABC(0x9F, reg + 1, 0, 1));
 			break;
 		}
 		case '[': {
-			int repetitions = cells[ptr];
+			int repetitions = cells[reg];
 			if (repetitions <= 1)
 				break;
 			nOpenedBrackets++;
@@ -99,7 +119,7 @@ std::string brainfuckTranslator(const char *s) {
 			break;
 		}
 		}
-		LOOP_EVAL:
+	LOOP_EVAL:
 		for (auto jmp : jumps) {
 			if (i == jmp->from) {
 				i = jmp->to - 1;
@@ -111,12 +131,8 @@ std::string brainfuckTranslator(const char *s) {
 	}
 
 	reg++;
-	constants.push_back(outputShit);
-	constants.push_back("print");
-	code.push_back(generateABx(0x35, reg, 0));
-	code.push_back(constants.size() - 1);
-	code.push_back(generateABx(0x6F, reg + 1, constants.size() - 2));
-	code.push_back(generateABC(0x9F, reg, 2, 1));
+	//.push_back(outputShit);
+
 
 	code.push_back(generateABC(0x82, 0, 1, 0));
 
@@ -131,7 +147,7 @@ std::string brainfuckTranslator(const char *s) {
 
 	writeCInt(ss, 1);
 
-	writeB(ss, reg*2);
+	writeB(ss, 255);
 	writeB(ss, 0);
 	writeB(ss, 0);
 	writeB(ss, 0);
